@@ -33,16 +33,32 @@
       gap: 1rem;
       justify-content: center;
     }
+    .room-code-box {
+      background: rgba(0,0,0,0.6);
+      padding: 1rem;
+      border-radius: 10px;
+      margin-bottom: 1.5rem;
+      text-align: center;
+      font-size: 1.2rem;
+      font-weight: bold;
+      letter-spacing: 2px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    }
+    .btn-nav {
+      position: absolute;
+      top: 1rem;
+      left: 1rem;
+    }
   </style>
 </head>
 <body>
-  <div class="text-center mb-4">
-    <h2 id="room-title">UNO Game Room</h2>
-    <p id="user-info"></p>
-  </div>
+  <button class="btn btn-light btn-sm btn-nav" onclick="goHome()">← Lobby</button>
 
-  <div class="player-list" id="players">
-    <!-- Player cards will go here -->
+  <div class="container text-center">
+    <h2 class="mb-3">UNO Game Room</h2>
+    <div id="room-code" class="room-code-box"></div>
+    <p id="user-info" class="mb-4"></p>
+    <div class="player-list" id="players"></div>
   </div>
 
   <script>
@@ -50,10 +66,14 @@
     const mode = params.get('mode');
     const name = params.get('name');
     const avatar = params.get('avatar');
-    const room = params.get('room') || Math.random().toString(36).substr(2, 6).toUpperCase();
+    let room = params.get('room');
 
-    document.getElementById('room-title').innerText = `UNO Game Room (${room})`;
-    document.getElementById('user-info').innerText = `You are ${name}`;
+    if (!room) {
+      room = Math.random().toString(36).substr(2, 6).toUpperCase();
+    }
+
+    document.getElementById('room-code').innerText = `ROOM CODE: ${room}`;
+    document.getElementById('user-info').innerText = `You are: ${name}`;
 
     const playersDiv = document.getElementById('players');
 
@@ -70,9 +90,12 @@
       });
     }
 
-    // ⚠️ ใส่ URL backend ของคุณตรงนี้ เช่น จาก Render
-    const SERVER_URL = "https://uno-server-vg1y.onrender.com"; // ← เปลี่ยนตรงนี้!
+    function goHome() {
+      window.location.href = "index.html";
+    }
 
+    // TODO: Replace this with your actual deployed Render server URL
+    const SERVER_URL = "https://uno-server-vg1y.onrender.com";
     const socket = io(SERVER_URL);
 
     socket.emit('join-room', { roomId: room, name, avatar });
@@ -82,7 +105,7 @@
     });
 
     socket.on('room-full', () => {
-      alert("This room is full (max 10 players). Redirecting to lobby...");
+      alert("Room is full (10 players max). Redirecting to Lobby...");
       window.location.href = "index.html";
     });
   </script>
