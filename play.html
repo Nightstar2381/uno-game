@@ -54,6 +54,9 @@
       font-weight: bold;
       border: 2px solid white;
     }
+    .invalid {
+      outline: 3px solid red;
+    }
   </style>
 </head>
 <body>
@@ -71,15 +74,20 @@
   </div>
 
   <script>
-    const params = new URLSearchParams(window.location.search);
-    const name = params.get('name');
-    const room = params.get('room');
-    const avatar = params.get('avatar');
+    const user = JSON.parse(localStorage.getItem('uno-user') || '{}');
+    const { name, room } = user;
+
+    if (!name || !room) {
+      alert('Missing user info. Redirecting to lobby...');
+      window.location.href = 'index.html';
+    }
 
     document.getElementById('room-info').innerText = `Room: ${room} | Player: ${name}`;
 
-    const SERVER_URL = "https://uno-server-vg1y.onrender.com";
+    const SERVER_URL = "https://uno-server-vgfy.onrender.com";
     const socket = io(SERVER_URL);
+
+    let currentPile = null;
 
     socket.emit('join-play', { room, name });
 
@@ -88,7 +96,9 @@
     });
 
     socket.on('update-pile', (topCard) => {
+      currentPile = topCard;
       document.getElementById('pile').innerText = topCard;
+      highlightPlayable();
     });
 
     function renderHand(cards) {
@@ -101,9 +111,28 @@
         div.onclick = () => playCard(card, index);
         handDiv.appendChild(div);
       });
+      highlightPlayable();
+    }
+
+    function highlightPlayable() {
+      if (!currentPile) return;
+      const handDiv = document.getElementById('hand');
+      const cards = handDiv.children;
+      for (let card of cards) {
+        const cardVal = card.innerText;
+        if (cardVal[0] === currentPile[0] || cardVal.slice(1) === currentPile.slice(1)) {
+          card.classList.remove('invalid');
+        } else {
+          card.classList.add('invalid');
+        }
+      }
     }
 
     function playCard(card, index) {
+      if (!(card[0] === currentPile[0] || card.slice(1) === currentPile.slice(1))) {
+        alert("You can't play this card");
+        return;
+      }
       socket.emit('play-card', { room, card, index });
     }
 
