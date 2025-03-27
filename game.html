@@ -49,6 +49,10 @@
       top: 1rem;
       left: 1rem;
     }
+    #startBtn {
+      margin: 2rem auto;
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -59,6 +63,7 @@
     <div id="room-code" class="room-code-box"></div>
     <p id="user-info" class="mb-4"></p>
     <div class="player-list" id="players"></div>
+    <button id="startBtn" class="btn btn-warning" onclick="startGame()">Start Game</button>
   </div>
 
   <script>
@@ -76,6 +81,7 @@
     document.getElementById('user-info').innerText = `You are: ${name}`;
 
     const playersDiv = document.getElementById('players');
+    const startBtn = document.getElementById('startBtn');
 
     function renderPlayers(players) {
       playersDiv.innerHTML = '';
@@ -88,13 +94,23 @@
         `;
         playersDiv.appendChild(card);
       });
+
+      // Show Start Game button if current user is first (host)
+      if (players[0] && players[0].name === name) {
+        startBtn.style.display = 'block';
+      } else {
+        startBtn.style.display = 'none';
+      }
     }
 
     function goHome() {
       window.location.href = "index.html";
     }
 
-    // TODO: Replace this with your actual deployed Render server URL
+    function startGame() {
+      socket.emit('start-game', room);
+    }
+
     const SERVER_URL = "https://uno-server-vg1y.onrender.com";
     const socket = io(SERVER_URL);
 
@@ -107,6 +123,11 @@
     socket.on('room-full', () => {
       alert("Room is full (10 players max). Redirecting to Lobby...");
       window.location.href = "index.html";
+    });
+
+    socket.on('game-started', () => {
+      alert("Game is starting! (ระบบแจกไพ่กำลังมาเร็ว ๆ นี้)");
+      // TODO: เปลี่ยนไปยังหน้าเกมจริงในอนาคต เช่น play.html
     });
   </script>
 </body>
