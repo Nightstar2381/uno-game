@@ -120,7 +120,7 @@
       const cards = handDiv.children;
       for (let card of cards) {
         const cardVal = card.innerText;
-        if (cardVal[0] === currentPile[0] || cardVal.slice(1) === currentPile.slice(1)) {
+        if (isPlayable(cardVal, currentPile)) {
           card.classList.remove('invalid');
         } else {
           card.classList.add('invalid');
@@ -128,8 +128,13 @@
       }
     }
 
+    function isPlayable(card, pile) {
+      const wild = card === 'WILD' || card === 'DRAW4';
+      return wild || card[0] === pile[0] || card.slice(1) === pile.slice(1);
+    }
+
     function playCard(card, index) {
-      if (!(card[0] === currentPile[0] || card.slice(1) === currentPile.slice(1))) {
+      if (!isPlayable(card, currentPile)) {
         alert("You can't play this card");
         return;
       }
