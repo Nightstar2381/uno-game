@@ -84,11 +84,9 @@
 
     document.getElementById('room-info').innerText = `Room: ${room} | Player: ${name}`;
 
-    // ✅ ใช้ WebSocket + URL ที่ถูกต้อง
+    // ✅ ลบ transports เพื่อให้ fallback อัตโนมัติ
     const SERVER_URL = "https://uno-server-vgfy.onrender.com";
-    const socket = io(SERVER_URL, {
-      transports: ["websocket"]
-    });
+    const socket = io(SERVER_URL);
 
     let currentPile = null;
 
