@@ -60,6 +60,10 @@
     #player-list {
       margin-bottom: 1rem;
     }
+    #turn-info {
+      font-weight: bold;
+      margin-top: 10px;
+    }
   </style>
 </head>
 <body>
@@ -67,6 +71,8 @@
     <h2>UNO Gameplay</h2>
     <p id="room-info"></p>
     <div id="player-list"></div>
+    <div id="turn-info"></div>
+    <button id="start-btn" class="btn btn-warning mb-3">Start Game</button>
 
     <div class="center-stack">
       <div class="deck" onclick="drawCard()">Deck</div>
@@ -80,46 +86,49 @@
   <script>
     const user = JSON.parse(localStorage.getItem('uno-user') || '{}');
     const { name, room } = user;
-
     if (!name || !room) {
       alert('Missing user info. Redirecting to lobby...');
       window.location.href = 'index.html';
     }
 
     document.getElementById('room-info').innerText = `Room: ${room} | Player: ${name}`;
-
     const SERVER_URL = "https://uno-server-vea3.onrender.com";
+    const socket = io(SERVER_URL);
 
-    let socket;
     let currentPile = null;
+    let myTurn = false;
 
-    try {
-      socket = io(SERVER_URL);
+    socket.on("connect_error", (err) => {
+      alert("❌ ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ UNO ได้!\n\n" + err.message);
+    });
 
-      socket.on("connect_error", (err) => {
-        alert("❌ ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ UNO ได้!\n\n" + err.message);
-        console.error("Socket connection error:", err);
-      });
+    socket.emit('join-play', { room, name });
 
-      socket.emit('join-play', { room, name });
+    socket.on('deal-hand', (hand) => {
+      renderHand(hand);
+    });
 
-      socket.on('deal-hand', (hand) => {
-        renderHand(hand);
-      });
+    socket.on('update-pile', (topCard) => {
+      currentPile = topCard;
+      document.getElementById('pile').innerText = topCard;
+      highlightPlayable();
+    });
 
-      socket.on('update-pile', (topCard) => {
-        currentPile = topCard;
-        document.getElementById('pile').innerText = topCard;
-        highlightPlayable();
-      });
+    socket.on('player-list', (players) => {
+      renderPlayerList(players);
+    });
 
-      socket.on('player-list', (players) => {
-        renderPlayerList(players);
-      });
+    socket.on('turn', (playerId) => {
+      myTurn = playerId === socket.id;
+      document.getElementById('turn-info').innerText = myTurn
+        ? '👉 Your turn!'
+        : '⏳ Waiting for your turn...';
+      highlightPlayable();
+    });
 
-    } catch (err) {
-      alert("เกิดข้อผิดพลาดขณะพยายามเชื่อมต่อเซิร์ฟเวอร์ UNO:\n" + err.message);
-      console.error(err);
+    document.getElementById("start-btn").onclick = () => {
+      socket.emit("start-game", room);
+      document.getElementById("start-btn").style.display = "none";
     }
 
     function renderHand(cards) {
@@ -141,11 +150,8 @@
       const cards = handDiv.children;
       for (let card of cards) {
         const cardVal = card.innerText;
-        if (isPlayable(cardVal, currentPile)) {
-          card.classList.remove('invalid');
-        } else {
-          card.classList.add('invalid');
-        }
+        const playable = isPlayable(cardVal, currentPile);
+        card.classList.toggle('invalid', !playable || !myTurn);
       }
     }
 
@@ -155,7 +161,7 @@
     }
 
     function playCard(card, index) {
-      if (!isPlayable(card, currentPile)) {
+      if (!myTurn || !isPlayable(card, currentPile)) {
         alert("You can't play this card");
         return;
       }
@@ -163,6 +169,7 @@
     }
 
     function drawCard() {
+      if (!myTurn) return alert("ไม่ใช่เทิร์นของคุณ");
       socket.emit('draw-card', room);
     }
 
