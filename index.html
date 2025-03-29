@@ -2,75 +2,58 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8">
-  <title>เข้าสู่ห้องเกม UNO</title>
+  <title>เข้าสู่เกม UNO</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
     body {
-      background: linear-gradient(to bottom, #cce7ff, #a7dbff);
-      height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      flex-direction: column;
+      background: linear-gradient(to bottom, #d9f0ff, #ffffff);
+      padding-top: 80px;
+      font-family: 'Segoe UI', sans-serif;
     }
-    .card {
-      padding: 30px;
-      border-radius: 16px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-      width: 100%;
-      max-width: 400px;
-    }
+
     .profile-preview {
       width: 100px;
       height: 100px;
-      object-fit: cover;
       border-radius: 50%;
-      border: 2px solid #007bff;
-      margin-bottom: 10px;
+      object-fit: cover;
+      border: 3px solid #0d6efd;
+      margin-top: 10px;
     }
   </style>
 </head>
 <body>
-  <div class="card text-center">
-    <h4 class="fw-bold mb-3">เข้าสู่ห้องเกม UNO</h4>
+  <div class="container text-center">
+    <h1 class="mb-4">🎮 เข้าสู่เกม UNO</h1>
 
-    <!-- รูปโปรไฟล์ -->
-    <img id="preview" class="profile-preview d-none" alt="รูปโปรไฟล์">
-    <input type="file" id="avatar" accept="image/*" class="form-control mb-3">
+    <form id="join-form">
+      <div class="mb-3">
+        <input type="text" id="username" class="form-control" placeholder="ชื่อผู้ใช้" required>
+      </div>
+      <div class="mb-3">
+        <input type="password" id="password" class="form-control" placeholder="รหัสผ่าน" required>
+      </div>
+      <div class="mb-3">
+        <input type="text" id="room" class="form-control" placeholder="เลขห้อง (เช่น 123)" required>
+      </div>
 
-    <!-- แบบฟอร์ม -->
-    <input type="text" class="form-control mb-2" placeholder="ชื่อผู้ใช้" id="username" required>
-    <input type="password" class="form-control mb-2" placeholder="รหัสผ่าน" id="password" required>
-    <input type="text" class="form-control mb-3" placeholder="ชื่อห้อง / เลขห้อง" id="room" required>
+      <div class="mb-3">
+        <label class="form-label">เลือกรูปโปรไฟล์:</label>
+        <input type="file" id="profile-pic" accept="image/*" class="form-control">
+        <img id="preview" class="profile-preview d-none" alt="Preview">
+      </div>
 
-    <button class="btn btn-primary w-100" onclick="enterRoom()">เข้าสู่ห้อง</button>
-  </div>
-
-  <!-- ลิงก์จัดอันดับและประวัติ -->
-  <div class="text-center mt-4">
-    <a href="ranking.html" class="me-3">📊 ดูอันดับผู้เล่น</a>
-    <a href="history.html">🧾 ดูประวัติของฉัน</a>
+      <button type="submit" class="btn btn-primary mt-2">เข้าสู่เกม</button>
+    </form>
   </div>
 
   <script>
-    function enterRoom() {
-      const username = document.getElementById("username").value.trim();
-      const password = document.getElementById("password").value.trim();
-      const room = document.getElementById("room").value.trim();
-
-      if (!username || !password || !room) {
-        alert("กรุณากรอกข้อมูลให้ครบ");
-        return;
-      }
-
-      window.location.href = `play.html?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&room=${encodeURIComponent(room)}`;
-    }
-
-    // แสดงรูปโปรไฟล์ที่เลือก
-    const avatarInput = document.getElementById("avatar");
+    const form = document.getElementById("join-form");
     const preview = document.getElementById("preview");
-    avatarInput.addEventListener("change", function () {
-      const file = this.files[0];
+    const picInput = document.getElementById("profile-pic");
+
+    picInput.addEventListener("change", () => {
+      const file = picInput.files[0];
       if (file) {
         const reader = new FileReader();
         reader.onload = e => {
@@ -78,6 +61,28 @@
           preview.classList.remove("d-none");
         };
         reader.readAsDataURL(file);
+      }
+    });
+
+    form.addEventListener("submit", e => {
+      e.preventDefault();
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value.trim();
+      const room = document.getElementById("room").value.trim();
+      const profilePic = picInput.files[0];
+
+      let query = `play.html?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&room=${encodeURIComponent(room)}`;
+
+      if (profilePic) {
+        // สำหรับใช้ base64 เป็น query (สามารถใช้ร่วมกับ localStorage ได้)
+        const reader = new FileReader();
+        reader.onload = e => {
+          localStorage.setItem("profilePic", e.target.result);
+          location.href = query;
+        };
+        reader.readAsDataURL(profilePic);
+      } else {
+        location.href = query;
       }
     });
   </script>

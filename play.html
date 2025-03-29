@@ -1,123 +1,64 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>UNO Game</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
   <style>
-    :root {
-      --bg: #cce7ff;
-      --text: #000;
-      --card-bg: #fff;
-    }
-
-    body.dark-mode {
-      --bg: #121212;
-      --text: #fff;
-      --card-bg: #1e1e1e;
-    }
-
     body {
-      background: var(--bg);
-      color: var(--text);
+      background: #f0f8ff;
+      color: #000;
       padding-top: 80px;
       font-family: 'Segoe UI', sans-serif;
-      transition: 0.3s;
     }
-
-    nav {
-      background-color: #ffffffcc;
-      box-shadow: 0 1px 5px rgba(0,0,0,0.1);
-      backdrop-filter: blur(6px);
-    }
-
-    nav a:hover {
-      color: #0d6efd !important;
-    }
-
-    .uno-card {
-      display: inline-block;
-      margin: 5px;
-      padding: 20px 15px;
-      border-radius: 12px;
-      font-size: 18px;
-      font-weight: bold;
-      color: white;
-      text-align: center;
-      min-width: 60px;
-      transition: transform 0.2s;
+    .uno-card-img {
+      width: 70px;
+      height: auto;
+      margin: 4px;
       cursor: pointer;
-      background: grey;
+      transition: transform 0.2s;
     }
-
-    .uno-card:hover { transform: scale(1.08); }
-
-    .red { background: #e53935; }
-    .blue { background: #1e88e5; }
-    .green { background: #43a047; }
-    .yellow { background: #fbc02d; color: black; }
-    .black { background: #333; }
-
-    .turn-highlight {
+    .uno-card-img:hover {
+      transform: scale(1.1);
+    }
+    #top-card, #draw-pile {
+      width: 80px;
+      height: auto;
+      cursor: pointer;
+    }
+    .profile-img {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      object-fit: cover;
       border: 2px solid #0d6efd;
-      border-radius: 50px;
-      padding: 3px 10px;
-      background: #e0f0ff;
-    }
-
-    .loader {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100px;
-    }
-
-    #top-card {
-      font-size: 20px;
-      padding: 25px;
-      margin-bottom: 15px;
-      border-radius: 12px;
-      display: inline-block;
-    }
-
-    .theme-toggle {
-      position: absolute;
-      right: 15px;
-      top: 15px;
-    }
-
-    @media (max-width: 768px) {
-      .uno-card {
-        font-size: 14px;
-        padding: 16px 10px;
-        min-width: 50px;
-      }
     }
   </style>
 </head>
-<body>
-
-  <!-- 🔝 Navbar -->
-  <nav class="navbar fixed-top px-3">
+<body onload="loadProfilePic()">
+  <nav class="navbar fixed-top px-3 bg-light">
     <div class="container-fluid">
       <span class="navbar-brand fw-bold">UNO Game</span>
       <div>
         <a href="index.html" class="nav-link d-inline px-2">🏠 หน้าแรก</a>
-        <a href="ranking.html" class="nav-link d-inline px-2">📊 อันดับ</a>
-        <a href="history.html" class="nav-link d-inline px-2">🧾 ประวัติ</a>
       </div>
-      <button class="btn btn-sm btn-outline-dark theme-toggle" onclick="toggleTheme()">🌓</button>
     </div>
   </nav>
 
   <div class="container text-center">
-    <h4 class="mb-2">ห้อง: <span id="room-name"></span></h4>
-    <div>ไพ่กลางโต๊ะ: <span id="top-card" class="black text-white">?</span></div>
+    <div id="profile-container" class="mb-2"></div>
+    <h4>ห้อง: <span id="room-name"></span></h4>
+    <div class="d-flex justify-content-center align-items-center gap-3 my-3">
+      <img id="draw-pile" src="https://raw.githubusercontent.com/Nightstar2381/uno-cards/main/back.png" alt="Draw Pile" onclick="drawCard()" />
+      <img id="top-card" src="https://raw.githubusercontent.com/Nightstar2381/uno-cards/main/wild.png" alt="Top Card" />
+    </div>
+    <div>⏱ เวลาเหลือ: <span id="countdown" class="fw-bold text-danger">–</span> วินาที</div>
+    <p class="mt-2">คะแนนสะสม: <span id="scoreboard">-</span></p>
     <div class="mb-2">ผู้เล่น: <span id="player-list"></span></div>
-    <div class="mb-3">เทิร์นของ: <span id="current-turn" class="turn-highlight"></span></div>
+    <div>เทิร์นของ: <span id="current-turn"></span></div>
 
-    <div id="loading" class="loader">
+    <div id="loading" class="my-3">
       <div class="spinner-border text-primary" role="status"></div>
     </div>
 
@@ -125,35 +66,37 @@
 
     <button class="btn btn-warning" onclick="callUNO()">กด UNO!</button>
 
-    <!-- 💬 แชท -->
     <div class="mt-4">
-      <input type="text" id="chat-input" class="form-control mb-2" placeholder="พิมพ์ข้อความ...">
+      <input type="text" id="chat-input" class="form-control mb-2" placeholder="พิมพ์ข้อความ..." />
       <button class="btn btn-secondary" onclick="sendChat()">ส่ง</button>
       <div id="chat-box" class="mt-3 text-start"></div>
     </div>
   </div>
 
-  <!-- 🎨 Modal เลือกสี WILD -->
-  <div class="modal fade" id="wildModal" tabindex="-1">
+  <!-- Game Over Summary Modal -->
+  <div class="modal fade" id="gameOverModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content text-center">
         <div class="modal-header">
-          <h5 class="modal-title">เลือกสีสำหรับไพ่ WILD</h5>
+          <h5 class="modal-title">🏆 ผลการแข่งขัน</h5>
         </div>
         <div class="modal-body">
-          <button class="btn btn-danger m-2" onclick="selectWildColor('red')">แดง</button>
-          <button class="btn btn-primary m-2" onclick="selectWildColor('blue')">น้ำเงิน</button>
-          <button class="btn btn-success m-2" onclick="selectWildColor('green')">เขียว</button>
-          <button class="btn btn-warning m-2" onclick="selectWildColor('yellow')">เหลือง</button>
+          <h4 id="winner-name" class="text-success mb-3">ผู้ชนะ: </h4>
+          <table class="table table-bordered">
+            <thead><tr><th>ผู้เล่น</th><th>คะแนนสะสม</th></tr></thead>
+            <tbody id="summary-body"></tbody>
+          </table>
+          <button class="btn btn-success me-2" onclick="startRematch()">เล่นใหม่</button>
+          <button class="btn btn-secondary" onclick="location.href='index.html'">กลับหน้าแรก</button>
         </div>
       </div>
     </div>
   </div>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
   <script>
     const socket = io("https://uno-server-vea3.onrender.com");
-
     const query = new URLSearchParams(location.search);
     const username = query.get("username");
     const password = query.get("password");
@@ -161,11 +104,23 @@
 
     document.getElementById("room-name").textContent = room;
 
-    // เสียง
-    const soundPlay = new Audio("https://cdn.pixabay.com/download/audio/2022/03/15/audio_fef0cc23d8.mp3?filename=click-pop-1-195274.mp3");
-    const soundUNO = new Audio("https://cdn.pixabay.com/download/audio/2022/03/22/audio_9ebf796c9f.mp3?filename=message-13294.mp3");
+    const cardImageURL = (card) => {
+      if (!card || !card.color || !card.value) return "";
+      let color = card.color.toLowerCase();
+      let value = card.value.toLowerCase().replace('+', 'plus');
+      return `https://raw.githubusercontent.com/Nightstar2381/uno-cards/main/${color}_${value}.png`;
+    };
 
-    let pendingWildIndex = null;
+    function loadProfilePic() {
+      const pic = localStorage.getItem("profilePic");
+      if (pic) {
+        const img = document.createElement("img");
+        img.src = pic;
+        img.alt = "Profile";
+        img.className = "profile-img mb-2";
+        document.getElementById("profile-container").appendChild(img);
+      }
+    }
 
     socket.emit("joinRoom", { username, password, room });
 
@@ -176,71 +131,58 @@
       renderHand(data.yourCards);
     });
 
-    socket.on("updateHand", cards => renderHand(cards));
-
-    socket.on("updatePlayers", ({ players, currentTurn }) => {
-      updatePlayers(players, currentTurn);
-    });
-
+    socket.on("updateHand", renderHand);
+    socket.on("updatePlayers", ({ players, currentTurn }) => updatePlayers(players, currentTurn));
     socket.on("updateTurn", turn => {
       document.getElementById("current-turn").textContent = turn;
     });
 
-    socket.on("chat", ({ user, message }) => {
-      const box = document.getElementById("chat-box");
-      box.innerHTML += `<div><strong>${user}:</strong> ${message}</div>`;
-      box.scrollTop = box.scrollHeight;
+    socket.on("topCard", card => {
+      const img = document.getElementById("top-card");
+      img.src = cardImageURL(card);
+      img.alt = `${card.color} ${card.value}`;
     });
 
-    socket.on("specialEffect", msg => {
-      const chatBox = document.getElementById("chat-box");
-      chatBox.innerHTML += `<div class="text-info"><em>${msg}</em></div>`;
+    socket.on("scoreUpdate", scores => {
+      const text = Object.entries(scores).map(([n, s]) => `${n}: ${s}`).join(" | ");
+      document.getElementById("scoreboard").textContent = text;
+      window.latestScores = scores;
     });
 
     socket.on("gameOver", winner => {
-      alert(`🎉 ${winner} ชนะเกมนี้!`);
-      location.href = "index.html";
-    });
-
-    socket.on("startCountdown", () => {
-      // คุณสามารถเพิ่ม timer UI ได้ต่อในอนาคต
+      document.getElementById("winner-name").textContent = `ผู้ชนะ: ${winner}`;
+      const tbody = document.getElementById("summary-body");
+      const scores = window.latestScores || {};
+      tbody.innerHTML = Object.entries(scores)
+        .map(([name, score]) => `<tr><td>${name}</td><td>${score}</td></tr>`)
+        .join("");
+      new bootstrap.Modal(document.getElementById("gameOverModal")).show();
     });
 
     function renderHand(cards) {
       const handDiv = document.getElementById("hand");
       handDiv.innerHTML = "";
       cards.forEach((card, index) => {
-        const el = document.createElement("div");
-        el.className = `uno-card ${card.color}`;
-        el.textContent = card.value;
-        el.onclick = () => {
-          if (card.value === "WILD") {
-            pendingWildIndex = index;
-            const modal = new bootstrap.Modal(document.getElementById("wildModal"));
-            modal.show();
-          } else {
-            socket.emit("playCard", index);
-            soundPlay.play();
-          }
+        const img = document.createElement("img");
+        img.src = cardImageURL(card);
+        img.alt = `${card.color} ${card.value}`;
+        img.className = "uno-card-img";
+        img.onclick = () => {
+          socket.emit("playCard", index);
         };
-        handDiv.appendChild(el);
+        handDiv.appendChild(img);
       });
     }
 
     function updatePlayers(players, currentTurn) {
       const listSpan = document.getElementById("player-list");
-      const currentSpan = document.getElementById("current-turn");
       listSpan.innerHTML = players.map(name =>
-        name === currentTurn
-          ? `<span class="turn-highlight">${name}</span>`
-          : name
+        name === currentTurn ? `<strong>${name}</strong>` : name
       ).join(", ");
-      currentSpan.textContent = currentTurn;
     }
 
     function callUNO() {
       socket.emit("callUNO");
-      soundUNO.play();
       alert("คุณกด UNO แล้ว!");
     }
 
@@ -251,27 +193,14 @@
       input.value = "";
     }
 
-    function selectWildColor(color) {
-      if (pendingWildIndex !== null) {
-        socket.emit("playCard", pendingWildIndex, color);
-        soundPlay.play();
-        pendingWildIndex = null;
-        const modal = bootstrap.Modal.getInstance(document.getElementById("wildModal"));
-        modal.hide();
-      }
+    function drawCard() {
+      socket.emit("drawCard");
     }
 
-    function toggleTheme() {
-      document.body.classList.toggle("dark-mode");
+    function startRematch() {
+      socket.emit("rematchRequest");
+      bootstrap.Modal.getInstance(document.getElementById("gameOverModal")).hide();
     }
-
-    // รับ topCard จาก backend (ถ้าคุณส่งผ่าน emit)
-    socket.on("topCard", card => {
-      const el = document.getElementById("top-card");
-      el.textContent = card.value;
-      el.className = `uno-card ${card.color}`;
-    });
   </script>
 </body>
 </html>
-
