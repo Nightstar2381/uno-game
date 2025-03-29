@@ -3,295 +3,275 @@
 <head>
   <meta charset="UTF-8">
   <title>UNO Game</title>
-  <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
-    body {
-      background-color: #e3f2fd;
-      font-family: sans-serif;
+    :root {
+      --bg: #cce7ff;
+      --text: #000;
+      --card-bg: #fff;
     }
+
+    body.dark-mode {
+      --bg: #121212;
+      --text: #fff;
+      --card-bg: #1e1e1e;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      padding-top: 80px;
+      font-family: 'Segoe UI', sans-serif;
+      transition: 0.3s;
+    }
+
+    nav {
+      background-color: #ffffffcc;
+      box-shadow: 0 1px 5px rgba(0,0,0,0.1);
+      backdrop-filter: blur(6px);
+    }
+
+    nav a:hover {
+      color: #0d6efd !important;
+    }
+
     .uno-card {
-      width: 80px;
-      height: 120px;
+      display: inline-block;
+      margin: 5px;
+      padding: 20px 15px;
       border-radius: 12px;
-      font-size: 32px;
+      font-size: 18px;
       font-weight: bold;
       color: white;
+      text-align: center;
+      min-width: 60px;
+      transition: transform 0.2s;
+      cursor: pointer;
+      background: grey;
+    }
+
+    .uno-card:hover { transform: scale(1.08); }
+
+    .red { background: #e53935; }
+    .blue { background: #1e88e5; }
+    .green { background: #43a047; }
+    .yellow { background: #fbc02d; color: black; }
+    .black { background: #333; }
+
+    .turn-highlight {
+      border: 2px solid #0d6efd;
+      border-radius: 50px;
+      padding: 3px 10px;
+      background: #e0f0ff;
+    }
+
+    .loader {
       display: flex;
       justify-content: center;
       align-items: center;
-      box-shadow: 2px 4px 8px rgba(0,0,0,0.3);
-      margin: 5px;
-      border: 4px solid white;
-      transition: transform 0.15s ease-in-out;
-      position: relative;
-      text-shadow: 1px 1px 2px black;
+      height: 100px;
     }
-    .uno-card:hover {
-      transform: scale(1.08);
-      cursor: pointer;
+
+    #top-card {
+      font-size: 20px;
+      padding: 25px;
+      margin-bottom: 15px;
+      border-radius: 12px;
+      display: inline-block;
     }
-    .color-red    { background-color: #e53935; }
-    .color-yellow { background-color: #fdd835; color: black; }
-    .color-green  { background-color: #43a047; }
-    .color-blue   { background-color: #1e88e5; }
-    .color-black  { background-color: #212121; }
-    .uno-card::before {
-      content: attr(data-value);
+
+    .theme-toggle {
       position: absolute;
-      top: 6px;
-      left: 8px;
-      font-size: 16px;
-      opacity: 0.7;
+      right: 15px;
+      top: 15px;
     }
-    #countdown-timer {
-      position: fixed;
-      top: 10px;
-      right: 10px;
-      background: #fff;
-      border: 2px solid #007bff;
-      padding: 12px;
-      border-radius: 10px;
-      z-index: 999;
-      min-width: 200px;
-      font-weight: bold;
-      display: none;
-    }
-    #countdown-bar {
-      height: 10px;
-      width: 100%;
-      border-radius: 5px;
-      background: green;
-      transition: width 1s linear, background 1s;
-    }
-    .flip-out {
-      animation: flipOut 0.5s ease-in forwards;
-    }
-    @keyframes flipOut {
-      0% { transform: rotateY(0); opacity: 1; }
-      100% { transform: rotateY(90deg); opacity: 0; }
-    }
-    .effect-banner {
-      position: fixed;
-      top: 40%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      font-size: 36px;
-      font-weight: bold;
-      background: rgba(0, 0, 0, 0.8);
-      color: #fff;
-      padding: 20px 40px;
-      border-radius: 20px;
-      z-index: 9999;
-      animation: fadeOut 2.5s ease forwards;
-    }
-    @keyframes fadeOut {
-      0% { opacity: 1; }
-      90% { opacity: 1; }
-      100% { opacity: 0; transform: translate(-50%, -60%); }
+
+    @media (max-width: 768px) {
+      .uno-card {
+        font-size: 14px;
+        padding: 16px 10px;
+        min-width: 50px;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="text-center mt-3">
-    <h4 id="room-name" class="fw-bold">ห้อง: -</h4>
-  </div>
-  <div id="player-list" class="text-center mb-3"></div>
-  <div id="hand" class="d-flex justify-content-center flex-wrap mb-4"></div>
-  <div class="container mb-3">
-    <div id="chat-box" style="height:150px; overflow-y:auto; background:#fff; padding:10px; border:1px solid #ccc;"></div>
-    <input type="text" id="chat-input" class="form-control mt-2" placeholder="พิมพ์ข้อความแล้วกด Enter">
-  </div>
-  <div class="text-center mb-3">
-    <button class="btn btn-danger" onclick="callUNO()">UNO!</button>
-  </div>
-  <div id="countdown-timer">
-    ⏱️ เวลา: <span id="countdown-value">15</span>s
-    <div class="mt-2"><div id="countdown-bar"></div></div>
+
+  <!-- 🔝 Navbar -->
+  <nav class="navbar fixed-top px-3">
+    <div class="container-fluid">
+      <span class="navbar-brand fw-bold">UNO Game</span>
+      <div>
+        <a href="index.html" class="nav-link d-inline px-2">🏠 หน้าแรก</a>
+        <a href="ranking.html" class="nav-link d-inline px-2">📊 อันดับ</a>
+        <a href="history.html" class="nav-link d-inline px-2">🧾 ประวัติ</a>
+      </div>
+      <button class="btn btn-sm btn-outline-dark theme-toggle" onclick="toggleTheme()">🌓</button>
+    </div>
+  </nav>
+
+  <div class="container text-center">
+    <h4 class="mb-2">ห้อง: <span id="room-name"></span></h4>
+    <div>ไพ่กลางโต๊ะ: <span id="top-card" class="black text-white">?</span></div>
+    <div class="mb-2">ผู้เล่น: <span id="player-list"></span></div>
+    <div class="mb-3">เทิร์นของ: <span id="current-turn" class="turn-highlight"></span></div>
+
+    <div id="loading" class="loader">
+      <div class="spinner-border text-primary" role="status"></div>
+    </div>
+
+    <div id="hand" class="d-none mb-4"></div>
+
+    <button class="btn btn-warning" onclick="callUNO()">กด UNO!</button>
+
+    <!-- 💬 แชท -->
+    <div class="mt-4">
+      <input type="text" id="chat-input" class="form-control mb-2" placeholder="พิมพ์ข้อความ...">
+      <button class="btn btn-secondary" onclick="sendChat()">ส่ง</button>
+      <div id="chat-box" class="mt-3 text-start"></div>
+    </div>
   </div>
 
-  <!-- 🔈 Sounds -->
-  <audio id="card-sound" src="https://www.soundjay.com/buttons/sounds/button-16.mp3" preload="auto"></audio>
-  <audio id="sound-plus2" src="https://www.soundjay.com/button/beep-06.wav" preload="auto"></audio>
-  <audio id="sound-skip" src="https://www.soundjay.com/button/button-09.wav" preload="auto"></audio>
-  <audio id="sound-reverse" src="https://www.soundjay.com/button/button-50.wav" preload="auto"></audio>
-  <audio id="win-sound" src="https://www.soundjay.com/human/sounds/applause-8.mp3" preload="auto"></audio>
-
-  <!-- 🏆 Winner Modal -->
-  <div class="modal fade" id="winModal" tabindex="-1">
+  <!-- 🎨 Modal เลือกสี WILD -->
+  <div class="modal fade" id="wildModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content text-center">
-        <div class="modal-header bg-success text-white">
-          <h5 class="modal-title">🎉 ผู้ชนะ!</h5>
+        <div class="modal-header">
+          <h5 class="modal-title">เลือกสีสำหรับไพ่ WILD</h5>
         </div>
         <div class="modal-body">
-          <h3 id="winner-name" class="fw-bold text-success"></h3>
-          <button class="btn btn-primary mt-3" onclick="restartGame()">เริ่มเกมใหม่</button>
+          <button class="btn btn-danger m-2" onclick="selectWildColor('red')">แดง</button>
+          <button class="btn btn-primary m-2" onclick="selectWildColor('blue')">น้ำเงิน</button>
+          <button class="btn btn-success m-2" onclick="selectWildColor('green')">เขียว</button>
+          <button class="btn btn-warning m-2" onclick="selectWildColor('yellow')">เหลือง</button>
         </div>
       </div>
     </div>
   </div>
-
-  <!-- 🔁 SCRIPT -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
   <script>
-    const urlParams = new URLSearchParams(window.location.search);
-    const username = urlParams.get('username');
-    const password = urlParams.get('password');
-    const room = urlParams.get('room');
     const socket = io("https://uno-server-vea3.onrender.com");
 
-    document.getElementById("room-name").textContent = `ห้อง: ${room}`;
-    socket.emit('joinRoom', { username, password, room });
+    const query = new URLSearchParams(location.search);
+    const username = query.get("username");
+    const password = query.get("password");
+    const room = query.get("room");
 
-    socket.on('joinedRoom', data => {
+    document.getElementById("room-name").textContent = room;
+
+    // เสียง
+    const soundPlay = new Audio("https://cdn.pixabay.com/download/audio/2022/03/15/audio_fef0cc23d8.mp3?filename=click-pop-1-195274.mp3");
+    const soundUNO = new Audio("https://cdn.pixabay.com/download/audio/2022/03/22/audio_9ebf796c9f.mp3?filename=message-13294.mp3");
+
+    let pendingWildIndex = null;
+
+    socket.emit("joinRoom", { username, password, room });
+
+    socket.on("joinedRoom", data => {
+      document.getElementById("loading").style.display = "none";
+      document.getElementById("hand").classList.remove("d-none");
       updatePlayers(data.players, data.currentTurn);
       renderHand(data.yourCards);
     });
 
-    socket.on('chat', msg => {
-      const box = document.getElementById("chat-box");
-      const div = document.createElement("div");
-      div.textContent = `${msg.user}: ${msg.message}`;
-      box.appendChild(div);
-      box.scrollTop = box.scrollHeight;
-    });
+    socket.on("updateHand", cards => renderHand(cards));
 
-    socket.on('updateHand', cards => renderHand(cards));
-
-    socket.on('updateTurn', nextPlayer => {
-      stopCountdown();
-      socket.emit('getPlayers');
-    });
-
-    socket.on('startCountdown', seconds => startCountdown(seconds));
-
-    socket.on('updatePlayers', ({ players, currentTurn }) => {
+    socket.on("updatePlayers", ({ players, currentTurn }) => {
       updatePlayers(players, currentTurn);
     });
 
-    socket.on('gameOver', winner => {
-      document.getElementById("win-sound").play();
-      document.getElementById("winner-name").textContent = winner;
-      const modal = new bootstrap.Modal(document.getElementById("winModal"));
-      modal.show();
+    socket.on("updateTurn", turn => {
+      document.getElementById("current-turn").textContent = turn;
     });
 
-    socket.on('specialEffect', message => showEffect(message));
+    socket.on("chat", ({ user, message }) => {
+      const box = document.getElementById("chat-box");
+      box.innerHTML += `<div><strong>${user}:</strong> ${message}</div>`;
+      box.scrollTop = box.scrollHeight;
+    });
 
-    document.getElementById("chat-input").addEventListener("keydown", e => {
-      if (e.key === "Enter") {
-        socket.emit('chat', e.target.value);
-        e.target.value = "";
-      }
+    socket.on("specialEffect", msg => {
+      const chatBox = document.getElementById("chat-box");
+      chatBox.innerHTML += `<div class="text-info"><em>${msg}</em></div>`;
+    });
+
+    socket.on("gameOver", winner => {
+      alert(`🎉 ${winner} ชนะเกมนี้!`);
+      location.href = "index.html";
+    });
+
+    socket.on("startCountdown", () => {
+      // คุณสามารถเพิ่ม timer UI ได้ต่อในอนาคต
     });
 
     function renderHand(cards) {
       const handDiv = document.getElementById("hand");
       handDiv.innerHTML = "";
       cards.forEach((card, index) => {
-        const div = document.createElement("div");
-        div.className = `uno-card color-${card.color}`;
-        div.setAttribute("data-value", card.value);
-        div.id = `card-${index}`;
-        let display = card.value;
-        if (card.value === 'Skip') display = '⏭️';
-        else if (card.value === 'Reverse') display = '🔁';
-        else if (card.value === '+2') display = '+2';
-        else if (card.value === 'WILD') display = '🎨';
-        else if (card.value === 'WILD+4') display = '🌈+4';
-        div.textContent = display;
-        div.onclick = () => {
-          if (card.value === "WILD" || card.value === "WILD+4") {
-            chooseWildColor(index);
+        const el = document.createElement("div");
+        el.className = `uno-card ${card.color}`;
+        el.textContent = card.value;
+        el.onclick = () => {
+          if (card.value === "WILD") {
+            pendingWildIndex = index;
+            const modal = new bootstrap.Modal(document.getElementById("wildModal"));
+            modal.show();
           } else {
-            playCardWithEffect(index);
+            socket.emit("playCard", index);
+            soundPlay.play();
           }
         };
-        handDiv.appendChild(div);
+        handDiv.appendChild(el);
       });
     }
 
     function updatePlayers(players, currentTurn) {
-      const div = document.getElementById("player-list");
-      div.innerHTML = players.map(name =>
+      const listSpan = document.getElementById("player-list");
+      const currentSpan = document.getElementById("current-turn");
+      listSpan.innerHTML = players.map(name =>
         name === currentTurn
-          ? `<span class="text-primary fw-bold">${name}</span>`
+          ? `<span class="turn-highlight">${name}</span>`
           : name
-      ).join(" | ");
+      ).join(", ");
+      currentSpan.textContent = currentTurn;
     }
 
     function callUNO() {
       socket.emit("callUNO");
+      soundUNO.play();
+      alert("คุณกด UNO แล้ว!");
     }
 
-    function chooseWildColor(index) {
-      const color = prompt("เลือกสี: red, blue, green, yellow");
-      if (["red", "blue", "green", "yellow"].includes(color)) {
-        socket.emit("playCard", index, color);
+    function sendChat() {
+      const input = document.getElementById("chat-input");
+      const msg = input.value.trim();
+      if (msg) socket.emit("chat", msg);
+      input.value = "";
+    }
+
+    function selectWildColor(color) {
+      if (pendingWildIndex !== null) {
+        socket.emit("playCard", pendingWildIndex, color);
+        soundPlay.play();
+        pendingWildIndex = null;
+        const modal = bootstrap.Modal.getInstance(document.getElementById("wildModal"));
+        modal.hide();
       }
     }
 
-    function restartGame() {
-      socket.emit("restartGame");
+    function toggleTheme() {
+      document.body.classList.toggle("dark-mode");
     }
 
-    function playCardWithEffect(index) {
-      const cardEl = document.getElementById(`card-${index}`);
-      const sound = document.getElementById("card-sound");
-      sound.play();
-      cardEl.classList.add("flip-out");
-      setTimeout(() => {
-        socket.emit("playCard", index);
-      }, 400);
-    }
-
-    function showEffect(text) {
-      const banner = document.createElement("div");
-      banner.className = "effect-banner";
-      banner.textContent = text;
-      if (text.includes('+2')) banner.style.background = '#b71c1c';
-      else if (text.includes('ข้าม')) banner.style.background = '#ef6c00';
-      else if (text.includes('หมุน')) banner.style.background = '#1565c0';
-      document.body.appendChild(banner);
-      setTimeout(() => banner.remove(), 2500);
-      if (text.includes('+2')) document.getElementById('sound-plus2').play();
-      else if (text.includes('ข้าม')) document.getElementById('sound-skip').play();
-      else if (text.includes('หมุน')) document.getElementById('sound-reverse').play();
-    }
-
-    let countdownInterval = null;
-    function startCountdown(seconds) {
-      const box = document.getElementById('countdown-timer');
-      const value = document.getElementById('countdown-value');
-      const bar = document.getElementById('countdown-bar');
-      let timeLeft = seconds;
-      value.textContent = timeLeft;
-      box.style.display = 'block';
-      updateBar(timeLeft, seconds);
-      if (countdownInterval) clearInterval(countdownInterval);
-      countdownInterval = setInterval(() => {
-        timeLeft--;
-        value.textContent = timeLeft;
-        updateBar(timeLeft, seconds);
-        if (timeLeft <= 3) document.getElementById("card-sound").play();
-        if (timeLeft <= 0) {
-          clearInterval(countdownInterval);
-          box.style.display = 'none';
-        }
-      }, 1000);
-    }
-
-    function stopCountdown() {
-      clearInterval(countdownInterval);
-      document.getElementById('countdown-timer').style.display = 'none';
-    }
-
-    function updateBar(current, max) {
-      const bar = document.getElementById('countdown-bar');
-      const percent = (current / max) * 100;
-      bar.style.width = percent + "%";
-      bar.style.background = percent > 50 ? "green" : percent > 25 ? "orange" : "red";
-    }
+    // รับ topCard จาก backend (ถ้าคุณส่งผ่าน emit)
+    socket.on("topCard", card => {
+      const el = document.getElementById("top-card");
+      el.textContent = card.value;
+      el.className = `uno-card ${card.color}`;
+    });
   </script>
 </body>
 </html>
+

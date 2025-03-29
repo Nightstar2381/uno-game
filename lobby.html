@@ -2,40 +2,72 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8">
-  <title>UNO Lobby</title>
+  <title>เข้าสู่ห้องเกม UNO</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
     body {
-      background-color: #e3f2fd;
+      background: linear-gradient(to bottom, #d0ebff, #a5d8ff);
+      height: 100vh;
     }
-    .container {
-      max-width: 400px;
+    .card {
       margin-top: 100px;
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+    .profile-preview {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid #007bff;
+      margin-bottom: 15px;
     }
   </style>
 </head>
 <body>
-  <div class="container text-center">
-    <h2 class="mb-4">🎮 เข้าร่วมห้อง UNO</h2>
-    <form id="lobby-form">
-      <input class="form-control mb-2" placeholder="ชื่อผู้เล่น" id="username" required>
-      <input class="form-control mb-2" placeholder="รหัสผ่าน" id="password" required>
-      <input class="form-control mb-2" placeholder="ชื่อห้อง (สร้างหรือเข้าร่วม)" id="room" required>
-      <button class="btn btn-primary w-100" type="submit">เข้าสู่ห้อง</button>
-    </form>
-    <a href="ranking.html" class="btn btn-link mt-3">📊 ดูอันดับผู้เล่น</a>
+  <div class="container d-flex justify-content-center">
+    <div class="card text-center">
+      <h4 class="mb-4 fw-bold">เข้าสู่ห้องเกม UNO</h4>
+      <img src="https://via.placeholder.com/100" id="preview-img" class="profile-preview" alt="รูปโปรไฟล์">
+      <input type="file" id="profile" accept="image/*" class="form-control mb-3">
+
+      <input type="text" id="username" class="form-control mb-2" placeholder="ชื่อผู้ใช้" required>
+      <input type="password" id="password" class="form-control mb-2" placeholder="รหัสผ่าน" required>
+      <input type="text" id="room" class="form-control mb-3" placeholder="เลขห้อง (เช่น 123, abc)" required>
+
+      <button class="btn btn-primary w-100" onclick="joinRoom()">เข้าสู่ห้อง</button>
+    </div>
   </div>
 
   <script>
-    document.getElementById("lobby-form").addEventListener("submit", e => {
-      e.preventDefault();
+    // แสดงรูป preview
+    document.getElementById("profile").addEventListener("change", function() {
+      const file = this.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          document.getElementById("preview-img").src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    function joinRoom() {
       const username = document.getElementById("username").value.trim();
       const password = document.getElementById("password").value.trim();
       const room = document.getElementById("room").value.trim();
+
       if (username && password && room) {
-        window.location.href = `play.html?username=${username}&password=${password}&room=${room}`;
+        // ✨ คุณสามารถเก็บรูปภาพใน localStorage ถ้าต้องการใช้ต่อ
+        const imgSrc = document.getElementById("preview-img").src;
+        localStorage.setItem("profileImage", imgSrc);
+
+        window.location.href = `play.html?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&room=${encodeURIComponent(room)}`;
+      } else {
+        alert("กรุณากรอกข้อมูลให้ครบ");
       }
-    });
+    }
   </script>
 </body>
 </html>
