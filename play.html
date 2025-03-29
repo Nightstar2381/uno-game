@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="th">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -8,23 +8,17 @@
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <style>
     body {
-      background: linear-gradient(to right, #ff595e, #ffca3a, #8ac926, #1982c4);
+      background: linear-gradient(120deg, #e0f7fa, #b3e5fc);
       min-height: 100vh;
-      color: white;
+      color: #333;
+      font-family: 'Segoe UI', sans-serif;
       padding: 1rem;
-    }
-    .player-area {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 1rem;
-      margin-bottom: 2rem;
     }
     .card-slot {
       width: 80px;
       height: 120px;
-      background: rgba(255,255,255,0.1);
-      border: 2px dashed white;
+      background: white;
+      border: 2px solid #ccc;
       border-radius: 10px;
       display: flex;
       align-items: center;
@@ -47,26 +41,92 @@
       width: 80px;
       height: 120px;
       border-radius: 10px;
-      background: rgba(0,0,0,0.3);
+      background: #eeeeee;
       display: flex;
       align-items: center;
       justify-content: center;
       font-weight: bold;
-      border: 2px solid white;
+      border: 2px solid #90caf9;
     }
     .invalid {
       outline: 3px solid red;
     }
+    .your-turn {
+      border: 3px solid lime;
+    }
     #player-list {
       margin-bottom: 1rem;
+    }
+    #turn-indicator {
+      font-weight: bold;
+      margin: 10px 0;
+    }
+    #win-banner {
+      background: lime;
+      color: black;
+      font-weight: bold;
+      padding: 1rem;
+      border-radius: 10px;
+      margin-bottom: 1rem;
+      display: none;
+    }
+    #uno-button {
+      display: none;
+      margin-bottom: 1rem;
+    }
+    #nav-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      background: #03a9f4;
+      color: white;
+      padding: 0.5rem 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      z-index: 999;
+    }
+    .nav-icon {
+      font-size: 1.2rem;
+      cursor: pointer;
+    }
+    #loading {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(255,255,255,0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      display: none;
     }
   </style>
 </head>
 <body>
-  <div class="container text-center">
+  <div id="loading">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">กำลังโหลด...</span>
+    </div>
+  </div>
+
+  <div id="nav-bar">
+    <span class="nav-icon" onclick="goBack()">⬅ ย้อนกลับ</span>
+    <strong>Powered by Nightstar Game</strong>
+    <span class="nav-icon" onclick="showStats()">📊 สถิติ</span>
+  </div>
+
+  <div class="container text-center mt-5 pt-5">
     <h2>UNO Gameplay</h2>
+    <div id="win-banner"></div>
     <p id="room-info"></p>
     <div id="player-list"></div>
+    <div id="turn-indicator"></div>
+    <button id="uno-button" class="btn btn-danger" onclick="callUno()">UNO!</button>
 
     <div class="center-stack">
       <div class="deck" onclick="drawCard()">Deck</div>
@@ -86,48 +146,63 @@
       window.location.href = 'index.html';
     }
 
-    document.getElementById('room-info').innerText = `Room: ${room} | Player: ${name}`;
+    document.getElementById('room-info').innerText = `ห้อง: ${room} | ผู้เล่น: ${name}`;
+    document.getElementById('loading').style.display = 'flex';
 
     const SERVER_URL = "https://uno-server-vea3.onrender.com";
+    const socket = io(SERVER_URL);
 
-    let socket;
     let currentPile = null;
+    let playerId = null;
+    let currentTurnId = null;
+    let playerNameMap = {};
 
-    try {
-      socket = io(SERVER_URL);
-
-      socket.on("connect_error", (err) => {
-        alert("❌ ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ UNO ได้!\n\n" + err.message);
-        console.error("Socket connection error:", err);
-      });
-
+    socket.on("connect", () => {
+      playerId = socket.id;
       socket.emit('join-play', { room, name });
+    });
 
-      socket.on('deal-hand', (hand) => {
-        renderHand(hand);
-      });
+    socket.on("deal-hand", (hand) => {
+      renderHand(hand);
+      document.getElementById('loading').style.display = 'none';
+    });
 
-      socket.on('update-pile', (topCard) => {
-        currentPile = topCard;
-        document.getElementById('pile').innerText = topCard;
-        highlightPlayable();
-      });
+    socket.on("update-pile", (topCard) => {
+      currentPile = topCard;
+      document.getElementById("pile").innerText = topCard;
+      highlightPlayable();
+    });
 
-      socket.on('player-list', (players) => {
-        renderPlayerList(players);
-      });
+    socket.on("player-list", (players) => {
+      const list = players.map(p => `👤 ${p.name}`).join('<br>');
+      document.getElementById("player-list").innerHTML = `<strong>ผู้เล่นในห้อง:</strong><br>${list}`;
+      players.forEach(p => playerNameMap[p.id] = p.name);
+    });
 
-    } catch (err) {
-      alert("เกิดข้อผิดพลาดขณะพยายามเชื่อมต่อเซิร์ฟเวอร์ UNO:\n" + err.message);
-      console.error(err);
-    }
+    socket.on("turn", (id) => {
+      currentTurnId = id;
+      highlightPlayable();
+      const name = playerNameMap[id] || 'ใครบางคน';
+      document.getElementById("turn-indicator").innerText = `🎯 ถึงตาของ ${name}`;
+    });
+
+    socket.on("drawn-card", (card) => {
+      alert(`คุณจั่วได้: ${card}`);
+    });
+
+    socket.on("win", (winnerName) => {
+      const banner = document.getElementById("win-banner");
+      banner.innerText = `🎉 ผู้ชนะคือ ${winnerName}!`;
+      banner.style.display = 'block';
+    });
 
     function renderHand(cards) {
-      const handDiv = document.getElementById('hand');
-      handDiv.innerHTML = '';
+      const handDiv = document.getElementById("hand");
+      handDiv.innerHTML = "";
+      document.getElementById("uno-button").style.display = cards.length === 2 ? 'inline-block' : 'none';
       cards.forEach((card, index) => {
-        const div = document.createElement('div');
-        div.className = 'card-slot';
+        const div = document.createElement("div");
+        div.className = "card-slot";
         div.innerText = card;
         div.onclick = () => playCard(card, index);
         handDiv.appendChild(div);
@@ -135,40 +210,50 @@
       highlightPlayable();
     }
 
-    function highlightPlayable() {
-      if (!currentPile) return;
-      const handDiv = document.getElementById('hand');
-      const cards = handDiv.children;
-      for (let card of cards) {
-        const cardVal = card.innerText;
-        if (isPlayable(cardVal, currentPile)) {
-          card.classList.remove('invalid');
-        } else {
-          card.classList.add('invalid');
-        }
-      }
-    }
-
     function isPlayable(card, pile) {
       const wild = card === 'WILD' || card === 'DRAW4';
       return wild || card[0] === pile[0] || card.slice(1) === pile.slice(1);
     }
 
-    function playCard(card, index) {
-      if (!isPlayable(card, currentPile)) {
-        alert("You can't play this card");
-        return;
+    function highlightPlayable() {
+      const handDiv = document.getElementById("hand");
+      const cards = handDiv.children;
+      for (let card of cards) {
+        const cardVal = card.innerText;
+        if (currentTurnId !== playerId) {
+          card.classList.remove("your-turn");
+          card.classList.add("invalid");
+        } else if (isPlayable(cardVal, currentPile)) {
+          card.classList.remove("invalid");
+          card.classList.add("your-turn");
+        } else {
+          card.classList.remove("your-turn");
+          card.classList.add("invalid");
+        }
       }
-      socket.emit('play-card', { room, card, index });
+    }
+
+    function playCard(card, index) {
+      if (playerId !== currentTurnId) return alert("⏳ ยังไม่ถึงตาคุณ!");
+      if (!isPlayable(card, currentPile)) return alert("❌ เล่นไพ่ใบนี้ไม่ได้");
+      socket.emit("play-card", { room, card, index });
     }
 
     function drawCard() {
-      socket.emit('draw-card', room);
+      if (playerId !== currentTurnId) return alert("⏳ ยังไม่ถึงตาคุณ!");
+      socket.emit("draw-card", room);
     }
 
-    function renderPlayerList(players) {
-      const list = players.map(p => `👤 ${p.name}`).join('<br>');
-      document.getElementById('player-list').innerHTML = `<strong>Players:</strong><br>${list}`;
+    function callUno() {
+      socket.emit("call-uno", room);
+    }
+
+    function goBack() {
+      window.location.href = 'index.html';
+    }
+
+    function showStats() {
+      alert("ยังไม่มีระบบสถิติในหน้านี้ ☺\nจะเพิ่มเร็ว ๆ นี้!");
     }
   </script>
 </body>
