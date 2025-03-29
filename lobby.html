@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>UNO Lobby</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #e3f2fd;
+    }
+    .container {
+      max-width: 400px;
+      margin-top: 100px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container text-center">
+    <h2 class="mb-4">🎮 เข้าร่วมห้อง UNO</h2>
+    <form id="lobby-form">
+      <input class="form-control mb-2" placeholder="ชื่อผู้เล่น" id="username" required>
+      <input class="form-control mb-2" placeholder="รหัสผ่าน" id="password" required>
+      <input class="form-control mb-2" placeholder="ชื่อห้อง (สร้างหรือเข้าร่วม)" id="room" required>
+      <button class="btn btn-primary w-100" type="submit">เข้าสู่ห้อง</button>
+    </form>
+    <a href="ranking.html" class="btn btn-link mt-3">📊 ดูอันดับผู้เล่น</a>
+  </div>
+
+  <script>
+    document.getElementById("lobby-form").addEventListener("submit", e => {
+      e.preventDefault();
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value.trim();
+      const room = document.getElementById("room").value.trim();
+      if (username && password && room) {
+        window.location.href = `play.html?username=${username}&password=${password}&room=${room}`;
+      }
+    });
+  </script>
+</body>
+</html>
